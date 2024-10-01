@@ -6,6 +6,7 @@ Usage:
 import argparse
 import pandas as pd
 import requests
+import urllib.parse
 
 from oauth2client.client import GoogleCredentials
 
@@ -22,9 +23,11 @@ def get_access_token():
 
 def call_updateWorkspaceACL_api(request, workspace_name, workspace_project, email):
     """PUT request to the putLibraryMetadata API."""
+    encoded_workspace_name = urllib.parse.quote(workspace_name)
+    encoded_workspace_project = urllib.parse.quote(workspace_project) # workspace namespace
 
     # request URL for updateWorkspaceACL
-    uri = f"https://api.firecloud.org/api/workspaces/{workspace_project}/{workspace_name}/acl?inviteUsersNotFound=false"
+    uri = f"https://api.firecloud.org/api/workspaces/{encoded_workspace_project}/{encoded_workspace_name}/acl?inviteUsersNotFound=false"
 
     # Get access token and and add to headers for requests.
     headers = {"Authorization": "Bearer " + get_access_token(), "accept": "*/*", "Content-Type": "application/json"}
@@ -56,14 +59,14 @@ def add_workspace_user(tsv):
     # make json request for each workspace and call API
     for row in tsv_all.index:
         # get workspace name from row (Series)
-        workspace_name = tsv_all.loc[row].get(key='workspace_name')
-        workspace_project = tsv_all.loc[row].get(key='workspace_project')
+        encoded_workspace_name = tsv_all.loc[row].get(key='workspace_name')
+        encoded_workspace_project = tsv_all.loc[row].get(key='workspace_project')
         email = tsv_all.loc[row].get(key='email')
         # create json request (remove workspace_name)
         row_json_request = "[" + tsv_all.loc[row].drop(labels='workspace_name').to_json() + "]"
 
         # call to API call with request and workspace name
-        call_updateWorkspaceACL_api(row_json_request, workspace_name, workspace_project, email)
+        call_updateWorkspaceACL_api(row_json_request, encoded_workspace_name, encoded_workspace_project, email)
 
 
 if __name__ == "__main__":
